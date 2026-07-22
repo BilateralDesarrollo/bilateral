@@ -1,7 +1,7 @@
 import { Suspense, useEffect, useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Center, Environment, Html, Lightformer } from '@react-three/drei'
-import { ACESFilmicToneMapping } from 'three'
+import { Center, Environment, Html, Lightformer, Text } from '@react-three/drei'
+import { ACESFilmicToneMapping, Plane, Vector3 } from 'three'
 import Logo from './assets/components/Logo'
 import './App.css'
 
@@ -9,6 +9,10 @@ const LOGO_WIDTH = 1.76
 const LOGO_HEIGHT = 2
 const LOGO_SIZE_MULTIPLIER = 1.45 // Cambia este valor para ajustar el tamaño del logo 3D -CG
 const RISE_PHASE_END = 0.38
+const OLD_TEXT_PLANE = new Plane(new Vector3(-1, 0, 0), 100)
+const NEW_TEXT_PLANE = new Plane(new Vector3(1, 0, 0), -100)
+const OLD_TEXT_CLIPPING_PLANES = [OLD_TEXT_PLANE]
+const NEW_TEXT_CLIPPING_PLANES = [NEW_TEXT_PLANE]
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max)
@@ -67,11 +71,17 @@ function Loader() {
   )
 }
 
-function ScrollAnimatedLogo() {
-  const groupRef = useRef(null)
+function getRiseProgress(scrollProgress) {
+  return easeInOutCubic(clamp(scrollProgress / RISE_PHASE_END, 0, 1))
+}
+
+function getSlideProgress(scrollProgress) {
+  return easeInOutCubic(clamp((scrollProgress - RISE_PHASE_END) / (1 - RISE_PHASE_END), 0, 1))
+}
+
+function useScrollProgressRef() {
   const progressRef = useRef(0)
-  const { invalidate, viewport } = useThree()
-  const initialLayout = getLogoLayout(viewport)
+  const { invalidate } = useThree()
 
   useEffect(() => {
     let frame = 0
@@ -99,14 +109,91 @@ function ScrollAnimatedLogo() {
     }
   }, [invalidate])
 
+  return progressRef
+}
+
+function CrystalTextLayer({ children, clippingPlanes }) {
+  const { viewport } = useThree()
+  const fontSize = clamp(viewport.width * 0.085, 0.28, 0.72)
+
+  return (
+    <group position={[0, 0, -0.5]}>
+      <Text anchorX="center" anchorY="middle" color="#36d6ff" fontSize={fontSize} letterSpacing={0} outlineColor="#b9f7ff" outlineOpacity={0.22} outlineWidth={0.012}>
+        {children}
+        <meshPhysicalMaterial
+          clippingPlanes={clippingPlanes}
+          color="#36d6ff"
+          emissive="#07364d"
+          emissiveIntensity={0.12}
+          clearcoat={1}
+          clearcoatRoughness={0.04}
+          envMapIntensity={2.4}
+          ior={1.45}
+          metalness={0}
+          opacity={0.78}
+          roughness={0.08}
+          specularColor="#f1fdff"
+          specularIntensity={1}
+          thickness={0.35}
+          transmission={0.18}
+          transparent
+        />
+      </Text>
+      <Text anchorX="center" anchorY="middle" color="#61eaff" fontSize={fontSize * 1.015} letterSpacing={0} position={[0.018, -0.02, -0.04]}>
+        {children}
+        <meshBasicMaterial clippingPlanes={clippingPlanes} color="#61eaff" opacity={0.16} transparent />
+      </Text>
+    </group>
+  )
+}
+
+function MagicalTextTransition({ progressRef }) {
+  const glowRef = useRef(null)
+  const { viewport } = useThree()
+
+  useFrame(() => {
+    const layout = getLogoLayout(viewport)
+    const slideProgress = getSlideProgress(progressRef.current)
+    const slidePosition = getSlidePosition(layout, slideProgress)
+    const boundary =
+      slideProgress === 0 ? viewport.width / 2 + 1 : slidePosition.x + LOGO_WIDTH * layout.scale * 0.18
+    const glow = glowRef.current
+
+    OLD_TEXT_PLANE.constant = boundary
+    NEW_TEXT_PLANE.constant = -boundary
+
+    if (glow) {
+      glow.position.x = boundary
+      glow.visible = slideProgress > 0.02 && slideProgress < 0.98
+      glow.material.opacity = Math.sin(Math.PI * slideProgress) * 0.22
+    }
+  })
+
+  return (
+    <>
+      <CrystalTextLayer clippingPlanes={OLD_TEXT_CLIPPING_PLANES}>Hola Mundo</CrystalTextLayer>
+      <CrystalTextLayer clippingPlanes={NEW_TEXT_CLIPPING_PLANES}>Bilateral</CrystalTextLayer>
+      <mesh ref={glowRef} position={[viewport.width / 2 + 1, 0, -0.32]}>
+        <planeGeometry args={[0.1, clamp(viewport.width * 0.12, 0.6, 1.35)]} />
+        <meshBasicMaterial color="#9ff6ff" transparent opacity={0} depthWrite={false} />
+      </mesh>
+    </>
+  )
+}
+
+function ScrollAnimatedLogo({ progressRef }) {
+  const groupRef = useRef(null)
+  const { viewport } = useThree()
+  const initialLayout = getLogoLayout(viewport)
+
   useFrame(() => {
     const group = groupRef.current
     if (!group) return
 
     const scrollProgress = progressRef.current
     const layout = getLogoLayout(viewport)
-    const riseProgress = easeInOutCubic(clamp(scrollProgress / RISE_PHASE_END, 0, 1))
-    const slideProgress = easeInOutCubic(clamp((scrollProgress - RISE_PHASE_END) / (1 - RISE_PHASE_END), 0, 1))
+    const riseProgress = getRiseProgress(scrollProgress)
+    const slideProgress = getSlideProgress(scrollProgress)
     const slidePosition = getSlidePosition(layout, slideProgress)
 
     group.position.x = slideProgress === 0 ? layout.startX : slidePosition.x
@@ -124,6 +211,19 @@ function ScrollAnimatedLogo() {
   )
 }
 
+function SceneContent() {
+  const progressRef = useScrollProgressRef()
+
+  return (
+    <>
+      <MagicalTextTransition progressRef={progressRef} />
+      <Suspense fallback={<Loader />}>
+        <ScrollAnimatedLogo progressRef={progressRef} />
+      </Suspense>
+    </>
+  )
+}
+
 function App() {
   return (
     <main className="logo-viewer">
@@ -136,6 +236,7 @@ function App() {
           onCreated={({ gl }) => {
             gl.toneMapping = ACESFilmicToneMapping
             gl.toneMappingExposure = 1
+            gl.localClippingEnabled = true
           }}
         >
           <color attach="background" args={['#4f4f4f']} />
@@ -153,9 +254,7 @@ function App() {
             <Lightformer intensity={3.4} color="#4edcff" position={[0, 0.5, -4]} scale={[8, 8, 1]} />
           </Environment>
 
-          <Suspense fallback={<Loader />}>
-            <ScrollAnimatedLogo />
-          </Suspense>
+          <SceneContent />
         </Canvas>
       </section>
       <div className="scroll-space" aria-hidden="true" />
