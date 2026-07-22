@@ -1,6 +1,6 @@
 .logo-viewer {
   width: 100vw;
-  min-height: 240svh;
+  min-height: 440svh;
   background: #010306;
 }
 
@@ -20,7 +20,7 @@
 }
 
 .scroll-space {
-  height: 140svh;
+  height: 340svh;
 }
 
 .model-loader {

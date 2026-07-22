@@ -12,7 +12,7 @@ import {
 const MODEL_PATH = '/models/logo.glb'
 const TEXTURE_SIZE = 1024
 
-function drawWavePath(ctx, points, color, width, alpha) {
+function drawSoftRibbon(ctx, points, color, width, alpha, blur = width) {
   ctx.save()
   ctx.globalAlpha = alpha
   ctx.strokeStyle = color
@@ -20,7 +20,7 @@ function drawWavePath(ctx, points, color, width, alpha) {
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
   ctx.shadowColor = color
-  ctx.shadowBlur = width * 0.8
+  ctx.shadowBlur = blur
   ctx.beginPath()
   ctx.moveTo(points[0].x, points[0].y)
 
@@ -34,79 +34,102 @@ function drawWavePath(ctx, points, color, width, alpha) {
   ctx.restore()
 }
 
-function createOceanWaveTexture() {
+function drawGlowEllipse(ctx, x, y, radiusX, radiusY, rotation, color, alpha) {
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.rotate(rotation)
+  ctx.globalAlpha = alpha
+  ctx.fillStyle = color
+  ctx.filter = 'blur(22px)'
+  ctx.beginPath()
+  ctx.ellipse(0, 0, radiusX, radiusY, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.restore()
+}
+
+function createCrystalTexture() {
   const canvas = document.createElement('canvas')
   canvas.width = TEXTURE_SIZE
   canvas.height = TEXTURE_SIZE
 
   const ctx = canvas.getContext('2d')
   const base = ctx.createLinearGradient(0, 0, TEXTURE_SIZE, TEXTURE_SIZE)
-  base.addColorStop(0, '#02101b')
-  base.addColorStop(0.35, '#05283e')
-  base.addColorStop(0.65, '#073b57')
-  base.addColorStop(1, '#010914')
+  base.addColorStop(0, '#08253a')
+  base.addColorStop(0.34, '#1c6a83')
+  base.addColorStop(0.68, '#0d425e')
+  base.addColorStop(1, '#041725')
   ctx.fillStyle = base
   ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE)
 
-  for (let band = 0; band < 18; band += 1) {
-    const points = []
-    const yStart = -80 + band * 70
-    const amplitude = 26 + (band % 4) * 9
-    const phase = band * 0.83
+  drawGlowEllipse(ctx, 180, 280, 180, 70, -0.45, '#4fe5f1', 0.34)
+  drawGlowEllipse(ctx, 760, 300, 220, 85, 0.62, '#7af4ff', 0.28)
+  drawGlowEllipse(ctx, 540, 740, 260, 95, -0.28, '#2fc4e3', 0.26)
+  drawGlowEllipse(ctx, 250, 780, 190, 72, 0.94, '#b3fff4', 0.16)
 
-    for (let step = 0; step <= 52; step += 1) {
-      const x = -80 + step * 24
-      const y =
-        yStart +
-        Math.sin(step * 0.42 + phase) * amplitude +
-        Math.sin(step * 0.14 + phase * 2.1) * 38
-      points.push({ x, y })
-    }
+  const ribbons = [
+    {
+      alpha: 0.32,
+      color: '#9ef8ff',
+      points: [
+        { x: -80, y: 290 },
+        { x: 150, y: 180 },
+        { x: 370, y: 180 },
+        { x: 610, y: 250 },
+        { x: 910, y: 160 },
+        { x: 1110, y: 230 },
+      ],
+      width: 34,
+    },
+    {
+      alpha: 0.24,
+      color: '#25c9ef',
+      points: [
+        { x: -60, y: 650 },
+        { x: 190, y: 560 },
+        { x: 440, y: 670 },
+        { x: 680, y: 610 },
+        { x: 1100, y: 700 },
+      ],
+      width: 44,
+    },
+    {
+      alpha: 0.18,
+      color: '#d3fff7',
+      points: [
+        { x: 40, y: 910 },
+        { x: 300, y: 840 },
+        { x: 590, y: 930 },
+        { x: 900, y: 820 },
+        { x: 1080, y: 870 },
+      ],
+      width: 26,
+    },
+  ]
 
-    drawWavePath(ctx, points, band % 3 === 0 ? '#58e4f4' : '#0e789e', band % 3 === 0 ? 18 : 28, 0.18)
-    drawWavePath(ctx, points, '#8cf5ff', 4, band % 3 === 0 ? 0.55 : 0.28)
-  }
-
-  for (let swirl = 0; swirl < 9; swirl += 1) {
-    const cx = 120 + ((swirl * 173) % 840)
-    const cy = 90 + ((swirl * 251) % 850)
-    const radius = 80 + (swirl % 3) * 48
-
-    ctx.save()
-    ctx.translate(cx, cy)
-    ctx.rotate(swirl * 0.72)
-    ctx.globalAlpha = 0.22
-    ctx.strokeStyle = swirl % 2 ? '#0ea0c8' : '#6fefff'
-    ctx.lineWidth = 12
-    ctx.shadowColor = '#67ecff'
-    ctx.shadowBlur = 18
-    ctx.beginPath()
-
-    for (let t = 0; t < Math.PI * 1.85; t += 0.12) {
-      const r = radius * (t / (Math.PI * 1.85))
-      const x = Math.cos(t) * r
-      const y = Math.sin(t) * r * 0.58
-      if (t === 0) ctx.moveTo(x, y)
-      else ctx.lineTo(x, y)
-    }
-
-    ctx.stroke()
-    ctx.restore()
-  }
+  ribbons.forEach((ribbon) => {
+    drawSoftRibbon(ctx, ribbon.points, ribbon.color, ribbon.width, ribbon.alpha, 34)
+  })
 
   const gloss = ctx.createRadialGradient(360, 220, 20, 360, 220, 520)
-  gloss.addColorStop(0, 'rgba(255, 255, 255, 0.22)')
-  gloss.addColorStop(0.22, 'rgba(102, 235, 255, 0.12)')
+  gloss.addColorStop(0, 'rgba(255, 255, 255, 0.36)')
+  gloss.addColorStop(0.18, 'rgba(165, 250, 255, 0.18)')
   gloss.addColorStop(1, 'rgba(0, 0, 0, 0)')
   ctx.fillStyle = gloss
+  ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE)
+
+  const shade = ctx.createLinearGradient(0, 0, TEXTURE_SIZE, 0)
+  shade.addColorStop(0, 'rgba(0, 14, 28, 0.28)')
+  shade.addColorStop(0.45, 'rgba(255, 255, 255, 0)')
+  shade.addColorStop(1, 'rgba(0, 12, 24, 0.34)')
+  ctx.fillStyle = shade
   ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE)
 
   const texture = new CanvasTexture(canvas)
   texture.colorSpace = SRGBColorSpace
   texture.wrapS = RepeatWrapping
   texture.wrapT = RepeatWrapping
-  texture.repeat.set(1.45, 1.9)
-  texture.rotation = -0.16
+  texture.repeat.set(1.08, 1.18)
+  texture.rotation = -0.06
   texture.center.set(0.5, 0.5)
   texture.magFilter = LinearFilter
   texture.minFilter = LinearFilter
@@ -117,37 +140,41 @@ function createOceanWaveTexture() {
 
 export default function Logo(props) {
   const { scene } = useGLTF(MODEL_PATH)
-  const oceanMaterial = useMemo(() => {
-    const oceanTexture = createOceanWaveTexture()
+  const crystalMaterial = useMemo(() => {
+    const crystalTexture = createCrystalTexture()
 
     return new MeshPhysicalMaterial({
-      color: '#6ee7f1',
-      map: oceanTexture,
-      emissive: '#07364d',
-      emissiveIntensity: 0.18,
-      emissiveMap: oceanTexture,
-      clearcoat: 0.9,
-      clearcoatRoughness: 0.12,
-      envMapIntensity: 2.2,
-      ior: 1.4,
+      color: '#93e7f2',
+      map: crystalTexture,
+      attenuationColor: '#55cfe6',
+      attenuationDistance: 1.6,
+      clearcoat: 1,
+      clearcoatRoughness: 0.055,
+      depthWrite: false,
+      emissive: '#063044',
+      emissiveIntensity: 0.08,
+      emissiveMap: crystalTexture,
+      envMapIntensity: 2.65,
+      ior: 1.48,
       metalness: 0,
-      opacity: 1,
-      roughness: 0.2,
+      opacity: 0.9,
+      roughness: 0.08,
       side: DoubleSide,
-      specularColor: '#b9f7ff',
-      specularIntensity: 0.9,
-      transmission: 0,
-      transparent: false,
+      specularColor: '#ecfdff',
+      specularIntensity: 1,
+      thickness: 0.55,
+      transmission: 0.08,
+      transparent: true,
     })
   }, [])
 
   useLayoutEffect(() => {
     scene.traverse((object) => {
       if (object.isMesh) {
-        object.material = oceanMaterial
+        object.material = crystalMaterial
       }
     })
-  }, [oceanMaterial, scene])
+  }, [crystalMaterial, scene])
 
   return <primitive object={scene} {...props} />
 }

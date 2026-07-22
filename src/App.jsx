@@ -7,6 +7,8 @@ import './App.css'
 
 const LOGO_WIDTH = 1.76
 const LOGO_HEIGHT = 2
+const LOGO_SIZE_MULTIPLIER = 1.45 // Cambia este valor para ajustar el tamaño del logo 3D -CG
+const RISE_PHASE_END = 0.38
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max)
@@ -17,26 +19,43 @@ function easeInOutCubic(value) {
 }
 
 function getScrollProgress() {
-  const animationDistance = window.innerHeight * 1.2
+  const animationDistance = window.innerHeight * 2.45
   return clamp(window.scrollY / animationDistance, 0, 1)
 }
 
 function getLogoLayout(viewport) {
-  const edgeMargin = Math.max(Math.min(viewport.width, viewport.height) * 0.04, 0.12)
-  const scale = clamp(
-    Math.min((viewport.height * 0.36) / LOGO_HEIGHT, (viewport.width * 0.42) / LOGO_WIDTH),
-    0.32,
-    0.72,
-  )
+  const edgeMargin = Math.max(Math.min(viewport.width, viewport.height) * 0.035, 0.1)
+  const baseScale = Math.min((viewport.height * 0.52) / LOGO_HEIGHT, (viewport.width * 0.62) / LOGO_WIDTH)
+  const scale = clamp(baseScale * LOGO_SIZE_MULTIPLIER, 0.52, 1.18)
   const halfWidth = (LOGO_WIDTH * scale) / 2
   const halfHeight = (LOGO_HEIGHT * scale) / 2
+  const bottomY = -viewport.height / 2 + halfHeight + edgeMargin
+  const topY = viewport.height / 2 - halfHeight - edgeMargin
 
   return {
     endX: -viewport.width / 2 + halfWidth + edgeMargin,
-    endY: -viewport.height / 2 + halfHeight + edgeMargin,
+    endY: bottomY,
     scale,
     startX: viewport.width / 2 - halfWidth - edgeMargin,
-    startY: viewport.height / 2 - halfHeight - edgeMargin,
+    startY: bottomY,
+    topY,
+  }
+}
+
+function getSlidePosition(layout, progress) {
+  const centerX = 0
+  const centerY = (layout.topY + layout.endY) * 0.5
+  const inverseProgress = 1 - progress
+
+  return {
+    x:
+      inverseProgress * inverseProgress * layout.startX +
+      2 * inverseProgress * progress * centerX +
+      progress * progress * layout.endX,
+    y:
+      inverseProgress * inverseProgress * layout.topY +
+      2 * inverseProgress * progress * centerY +
+      progress * progress * layout.endY,
   }
 }
 
@@ -84,12 +103,15 @@ function ScrollAnimatedLogo() {
     const group = groupRef.current
     if (!group) return
 
-    const progress = easeInOutCubic(progressRef.current)
+    const scrollProgress = progressRef.current
     const layout = getLogoLayout(viewport)
+    const riseProgress = easeInOutCubic(clamp(scrollProgress / RISE_PHASE_END, 0, 1))
+    const slideProgress = easeInOutCubic(clamp((scrollProgress - RISE_PHASE_END) / (1 - RISE_PHASE_END), 0, 1))
+    const slidePosition = getSlidePosition(layout, slideProgress)
 
-    group.position.x = layout.startX + (layout.endX - layout.startX) * progress
-    group.position.y = layout.startY + (layout.endY - layout.startY) * progress
-    group.rotation.y = Math.PI * 2 * progress
+    group.position.x = slideProgress === 0 ? layout.startX : slidePosition.x
+    group.position.y = slideProgress === 0 ? layout.startY + (layout.topY - layout.startY) * riseProgress : slidePosition.y
+    group.rotation.y = Math.PI * 2 * slideProgress
     group.scale.setScalar(layout.scale)
   })
 
@@ -116,7 +138,7 @@ function App() {
             gl.toneMappingExposure = 1
           }}
         >
-          <color attach="background" args={['#4f4f4f']} /> // Color fondo -S
+          <color attach="background" args={['#4f4f4f']} />
           <ambientLight intensity={0.26} />
           <hemisphereLight args={['#d8fbff', '#0b3750', 0.72]} />
           <directionalLight position={[4, 5, 7]} intensity={1.55} color="#2bf6f9" />
