@@ -120,19 +120,22 @@ export default function Logo(props) {
   const oceanMaterial = useMemo(() => {
     const oceanTexture = createOceanWaveTexture()
 
-    return new MeshPhysicalMaterial({ // Color principal logo 3D
-      color: '#00afbf',
+    return new MeshPhysicalMaterial({
+      color: '#6ee7f1',
       map: oceanTexture,
+      emissive: '#07364d',
+      emissiveIntensity: 0.18,
+      emissiveMap: oceanTexture,
       clearcoat: 0.9,
       clearcoatRoughness: 0.12,
-      envMapIntensity: 1.8,
+      envMapIntensity: 2.2,
       ior: 1.4,
       metalness: 0,
       opacity: 1,
       roughness: 0.2,
       side: DoubleSide,
       specularColor: '#b9f7ff',
-      specularIntensity: 0.75,
+      specularIntensity: 0.9,
       transmission: 0,
       transparent: false,
     })

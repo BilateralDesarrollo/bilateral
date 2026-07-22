@@ -1,19 +1,26 @@
 .logo-viewer {
   width: 100vw;
+  min-height: 240svh;
+  background: #010306;
+}
+
+.logo-scene {
+  position: sticky;
+  top: 0;
+  width: 100vw;
   height: 100svh;
   overflow: hidden;
-  background: #010306;
-  cursor: grab;
 }
 
-.logo-viewer:active {
-  cursor: grabbing;
-}
-
-.logo-viewer canvas {
+.logo-scene canvas {
   display: block;
   outline: none;
-  touch-action: none;
+  pointer-events: none;
+  touch-action: pan-y;
+}
+
+.scroll-space {
+  height: 140svh;
 }
 
 .model-loader {
