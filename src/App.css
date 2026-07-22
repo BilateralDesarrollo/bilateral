@@ -1,0 +1,32 @@
+.logo-viewer {
+  width: 100vw;
+  height: 100svh;
+  overflow: hidden;
+  background: #010306;
+  cursor: grab;
+}
+
+.logo-viewer:active {
+  cursor: grabbing;
+}
+
+.logo-viewer canvas {
+  display: block;
+  outline: none;
+  touch-action: none;
+}
+
+.model-loader {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(27, 191, 232, 0.2);
+  border-top-color: rgba(244, 253, 255, 0.9);
+  border-radius: 50%;
+  animation: model-loader-spin 800ms linear infinite;
+}
+
+@keyframes model-loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
