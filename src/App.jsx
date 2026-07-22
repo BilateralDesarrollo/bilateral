@@ -28,14 +28,14 @@ function App() {
       >
         <color attach="background" args={['#e8eaed']} />
         <ambientLight intensity={0.18} />
-        <directionalLight position={[4, 5, 7]} intensity={2.1} color="#d8fbff" />
-        <directionalLight position={[-4, -2, 5]} intensity={0.55} color="#0c82bd" />
-        <pointLight position={[0, 0, 4]} intensity={0.85} color="#50d8ff" />
+        <directionalLight position={[4, 5, 7]} intensity={2.1} color="#2bf6f9" /> // Luz externa
+        <directionalLight position={[-4, -2, 5]} intensity={0.55} color="#0c82bd" /> // Luz interna
+        <pointLight position={[0, 0, 4]} intensity={0.85} color="#50d8ff" /> // Luz interna
         <Environment resolution={64} background={false} environmentIntensity={1.35}>
           <Lightformer intensity={5.2} color="#ffffff" position={[-2.5, 2.5, 5]} rotation={[0, 0.35, 0]} scale={[0.9, 5.2, 1]} />
-          <Lightformer intensity={4.4} color="#dffbff" position={[2.8, 1.4, 4]} rotation={[0, -0.45, 0]} scale={[0.8, 3.8, 1]} />
-          <Lightformer intensity={3.2} color="#1ec9f2" position={[0, -2.2, 4]} rotation={[0.6, 0, 0]} scale={[5, 1.2, 1]} />
-          <Lightformer intensity={2.4} color="#06243a" position={[0, 0, -4]} scale={[8, 8, 1]} />
+          <Lightformer intensity={9.4} color="#dffbff" position={[2.8, 1.4, 4]} rotation={[0, -0.45, 0]} scale={[0.8, 3.8, 1]} />
+          <Lightformer intensity={2.2} color="#1ec9f2" position={[0, -2.2, 4]} rotation={[0.6, 0, 0]} scale={[5, 1.2, 1]} />
+          <Lightformer intensity={4.4} color="#061c3a" position={[0, 0, -4]} scale={[8, 8, 1]} />
         </Environment>
 
         <Suspense fallback={null}>
