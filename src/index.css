@@ -25,3 +25,7 @@ body {
   min-height: 100svh;
   overflow-x: hidden;
 }
+
+body.site-loading {
+  overflow: hidden;
+}

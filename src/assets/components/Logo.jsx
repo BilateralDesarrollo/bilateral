@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo } from 'react'
+import { useLayoutEffect, useMemo, useRef } from 'react'
 import { useGLTF } from '@react-three/drei'
 import {
   CanvasTexture,
@@ -10,7 +10,7 @@ import {
 } from 'three'
 
 const MODEL_PATH = '/models/logo.glb'
-const TEXTURE_SIZE = 1024
+const TEXTURE_SIZE = 512
 
 function drawSoftRibbon(ctx, points, color, width, alpha, blur = width) {
   ctx.save()
@@ -138,22 +138,23 @@ function createCrystalTexture() {
   return texture
 }
 
-export default function Logo(props) {
+export default function Logo({ color = '#93e7f2', emissive = '#063044', onReady, useCrystalTexture = true, ...props }) {
   const { scene } = useGLTF(MODEL_PATH)
+  const modelScene = useMemo(() => scene.clone(true), [scene])
+  const crystalTexture = useMemo(() => createCrystalTexture(), [])
+  const readyRef = useRef(false)
   const crystalMaterial = useMemo(() => {
-    const crystalTexture = createCrystalTexture()
-
     return new MeshPhysicalMaterial({
-      color: '#93e7f2',
-      map: crystalTexture,
+      color,
+      map: useCrystalTexture ? crystalTexture : null,
       attenuationColor: '#55cfe6',
       attenuationDistance: 1.6,
       clearcoat: 1,
       clearcoatRoughness: 0.055,
       depthWrite: false,
-      emissive: '#063044',
+      emissive,
       emissiveIntensity: 0.08,
-      emissiveMap: crystalTexture,
+      emissiveMap: useCrystalTexture ? crystalTexture : null,
       envMapIntensity: 2.65,
       ior: 1.48,
       metalness: 0,
@@ -166,17 +167,22 @@ export default function Logo(props) {
       transmission: 0.08,
       transparent: true,
     })
-  }, [])
+  }, [color, crystalTexture, emissive, useCrystalTexture])
 
   useLayoutEffect(() => {
-    scene.traverse((object) => {
+    modelScene.traverse((object) => {
       if (object.isMesh) {
         object.material = crystalMaterial
       }
     })
-  }, [crystalMaterial, scene])
 
-  return <primitive object={scene} {...props} />
+    if (!readyRef.current) {
+      readyRef.current = true
+      onReady?.()
+    }
+  }, [crystalMaterial, modelScene, onReady])
+
+  return <primitive object={modelScene} {...props} />
 }
 
 useGLTF.preload(MODEL_PATH)
