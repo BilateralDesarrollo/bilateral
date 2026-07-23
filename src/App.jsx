@@ -171,6 +171,55 @@ function MagicalTextTransition({ progressRef }) {
   )
 }
 
+function CursorLamp() {
+  const lightRef = useRef(null)
+  const targetRef = useRef(new Vector3(0, 0, 2.8))
+  const activeRef = useRef(false)
+  const { gl, invalidate, viewport } = useThree()
+
+  useEffect(() => {
+    const updateLightTarget = (event) => {
+      const rect = gl.domElement.getBoundingClientRect()
+      const x = ((event.clientX - rect.left) / rect.width) * 2 - 1
+      const y = -(((event.clientY - rect.top) / rect.height) * 2 - 1)
+
+      targetRef.current.set((x * viewport.width) / 2, (y * viewport.height) / 2, 2.8)
+      activeRef.current = true
+      invalidate()
+    }
+
+    const dimLight = () => {
+      activeRef.current = false
+      invalidate()
+    }
+
+    const canvas = gl.domElement
+    canvas.addEventListener('pointermove', updateLightTarget)
+    canvas.addEventListener('pointerenter', updateLightTarget)
+    canvas.addEventListener('pointerleave', dimLight)
+
+    return () => {
+      canvas.removeEventListener('pointermove', updateLightTarget)
+      canvas.removeEventListener('pointerenter', updateLightTarget)
+      canvas.removeEventListener('pointerleave', dimLight)
+    }
+  }, [gl, invalidate, viewport.height, viewport.width])
+
+  useFrame(() => {
+    const light = lightRef.current
+    if (!light) return
+
+    light.position.lerp(targetRef.current, 0.32)
+    light.intensity += ((activeRef.current ? 7.5 : 0.85) - light.intensity) * 0.24
+
+    if (activeRef.current || light.intensity > 0.9) {
+      invalidate()
+    }
+  })
+
+  return <pointLight ref={lightRef} position={[0, 0, 2.8]} intensity={0.85} distance={3.8} decay={1.35} color="#e9fdff" />
+}
+
 function ScrollAnimatedLogo({ progressRef }) {
   const groupRef = useRef(null)
   const { viewport } = useThree()
@@ -231,7 +280,7 @@ function App() {
             gl.localClippingEnabled = true
           }}
         >
-          <color attach="background" args={['#4f4f4f']} />
+          <color attach="background" args={['#1a1a1a']} />
           <ambientLight intensity={0.26} />
           <hemisphereLight args={['#d8fbff', '#0b3750', 0.72]} />
           <directionalLight position={[4, 5, 7]} intensity={1.55} color="#2bf6f9" />
@@ -245,6 +294,7 @@ function App() {
             <Lightformer intensity={2.2} color="#1ec9f2" position={[0, -2.2, 4]} rotation={[0.6, 0, 0]} scale={[5, 1.2, 1]} />
             <Lightformer intensity={3.4} color="#4edcff" position={[0, 0.5, -4]} scale={[8, 8, 1]} />
           </Environment>
+          <CursorLamp />
 
           <SceneContent />
         </Canvas>

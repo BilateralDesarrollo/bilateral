@@ -15,7 +15,7 @@
 .logo-scene canvas {
   display: block;
   outline: none;
-  pointer-events: none;
+  pointer-events: auto;
   touch-action: pan-y;
 }
 
