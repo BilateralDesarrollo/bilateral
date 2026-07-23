@@ -8,6 +8,8 @@ import './App.css'
 const LOGO_WIDTH = 1.76
 const LOGO_HEIGHT = 2
 const LOGO_SIZE_MULTIPLIER = 1.45 // Cambia este valor para ajustar el tamaño del logo 3D -CG
+const LOGO_FORWARD_DEPTH = 1.35
+const LOGO_FORWARD_SCALE = 0.38
 const RISE_PHASE_END = 0.38
 const OLD_TEXT_PLANE = new Plane(new Vector3(-1, 0, 0), 100)
 const NEW_TEXT_PLANE = new Plane(new Vector3(1, 0, 0), -100)
@@ -148,7 +150,6 @@ function CrystalTextLayer({ children, clippingPlanes }) {
 }
 
 function MagicalTextTransition({ progressRef }) {
-  const glowRef = useRef(null)
   const { viewport } = useThree()
 
   useFrame(() => {
@@ -157,26 +158,15 @@ function MagicalTextTransition({ progressRef }) {
     const slidePosition = getSlidePosition(layout, slideProgress)
     const boundary =
       slideProgress === 0 ? viewport.width / 2 + 1 : slidePosition.x + LOGO_WIDTH * layout.scale * 0.18
-    const glow = glowRef.current
 
     OLD_TEXT_PLANE.constant = boundary
     NEW_TEXT_PLANE.constant = -boundary
-
-    if (glow) {
-      glow.position.x = boundary
-      glow.visible = slideProgress > 0.02 && slideProgress < 0.98
-      glow.material.opacity = Math.sin(Math.PI * slideProgress) * 0.22
-    }
   })
 
   return (
     <>
       <CrystalTextLayer clippingPlanes={OLD_TEXT_CLIPPING_PLANES}>Hola Mundo</CrystalTextLayer>
       <CrystalTextLayer clippingPlanes={NEW_TEXT_CLIPPING_PLANES}>Bilateral</CrystalTextLayer>
-      <mesh ref={glowRef} position={[viewport.width / 2 + 1, 0, -0.32]}>
-        <planeGeometry args={[0.1, clamp(viewport.width * 0.12, 0.6, 1.35)]} />
-        <meshBasicMaterial color="#9ff6ff" transparent opacity={0} depthWrite={false} />
-      </mesh>
     </>
   )
 }
@@ -195,11 +185,13 @@ function ScrollAnimatedLogo({ progressRef }) {
     const riseProgress = getRiseProgress(scrollProgress)
     const slideProgress = getSlideProgress(scrollProgress)
     const slidePosition = getSlidePosition(layout, slideProgress)
+    const forwardProgress = Math.sin(Math.PI * slideProgress)
 
     group.position.x = slideProgress === 0 ? layout.startX : slidePosition.x
     group.position.y = slideProgress === 0 ? layout.startY + (layout.topY - layout.startY) * riseProgress : slidePosition.y
+    group.position.z = forwardProgress * LOGO_FORWARD_DEPTH
     group.rotation.y = Math.PI * 2 * slideProgress
-    group.scale.setScalar(layout.scale)
+    group.scale.setScalar(layout.scale * (1 + forwardProgress * LOGO_FORWARD_SCALE))
   })
 
   return (
